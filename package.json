@@ -1,0 +1,30 @@
+{
+  "name": "nutrino",
+  "version": "1.0.0",
+  "description": "Telegram bot for calorie tracking with subscription billing",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "npx ts-node src/index.ts",
+    "dev:watch": "nodemon --exec npx ts-node src/index.ts",
+    "migrate": "npx prisma migrate dev",
+    "commands": "npx ts-node src/setup-commands.ts",
+    "prisma:generate": "npx prisma generate"
+  },
+  "keywords": ["telegram", "bot", "calorie", "tracking", "subscription"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "dotenv": "^17.4.2",
+    "grammy": "^1.43.0",
+    "prisma": "^6.19.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.17.0",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
