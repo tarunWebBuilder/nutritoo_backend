@@ -3,13 +3,13 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id                Int              @id @default(autoincrement())
-  telegramId        BigInt           @unique
+  telegramId        BigInt           @unique @map("telegram_id")
   firstName         String?
   lastName          String?
   username          String?
@@ -26,6 +26,7 @@ model FoodEntry {
   user        User     @relation(fields: [userId], references: [id])
   description String
   calories    Int
+  aiResponse  Json?
   loggedAt    DateTime @default(now())
   date        DateTime @default(now())
 }

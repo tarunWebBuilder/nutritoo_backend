@@ -12,7 +12,7 @@ const bot = new Bot(token);
 async function setup() {
   await bot.api.setMyCommands([
     { command: "start", description: "Start the bot and see welcome message" },
-    { command: "log", description: "Log a food entry (e.g. /log Chicken 450)" },
+    { command: "log", description: "Describe food and AI estimates calories" },
     { command: "today", description: "See today's calorie total" },
     { command: "week", description: "See this week's calorie stats" },
     { command: "subscribe", description: "Subscribe to Nutrino Premium" },

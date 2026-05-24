@@ -1,6 +1,7 @@
 import { Composer } from "grammy";
 import prisma from "../db";
 import type { AuthContext } from "../middleware/auth";
+import { estimateCalories } from "../services/calorie-estimator";
 
 const composer = new Composer<AuthContext>();
 
@@ -31,35 +32,44 @@ composer.command("log", async (ctx) => {
 
   const text = ctx.match?.trim() || "";
   if (!text) {
-    await ctx.reply("Usage: /log <description> <calories>\nExample: /log Chicken salad 450");
+    await ctx.reply("Describe what you ate — e.g. /log chicken salad with olive oil");
     return;
   }
 
-  const parts = text.split(/(\d+)$/).filter(Boolean);
-  if (parts.length < 2) {
-    await ctx.reply("Usage: /log <description> <calories>\nExample: /log Chicken salad 450");
+  const msg = await ctx.reply("🤔 Estimating calories with AI...");
+
+  const estimate = await estimateCalories(text);
+  if (!estimate) {
+    await ctx.api.editMessageText(
+      msg.chat.id,
+      msg.message_id,
+      "Couldn't estimate that. Try being more specific (e.g. /log 200g chicken breast)."
+    );
     return;
   }
 
-  const caloriesStr = parts[parts.length - 1].trim();
-  const description = parts.slice(0, -1).join(" ").trim();
-  const calories = parseInt(caloriesStr, 10);
+  const { description, calories } = estimate;
 
-  if (isNaN(calories) || calories <= 0) {
-    await ctx.reply("Please provide a valid number of calories.");
-    return;
-  }
+  const macroParts: string[] = [];
+  if (estimate.protein_g) macroParts.push(`P ${estimate.protein_g}g`);
+  if (estimate.fat_g) macroParts.push(`F ${estimate.fat_g}g`);
+  if (estimate.carbs_g) macroParts.push(`C ${estimate.carbs_g}g`);
+  const macroLine = macroParts.length ? ` (${macroParts.join(", ")})` : "";
+  const serving = estimate.serving_size ? ` • ${estimate.serving_size}` : "";
 
-  if (calories > 10000) {
-    await ctx.reply("That seems too high. Please check your calorie count.");
-    return;
-  }
+  await ctx.api.editMessageText(
+    msg.chat.id,
+    msg.message_id,
+    `🤖 *${description}* — ${calories} kcal${macroLine}${serving}`,
+    { parse_mode: "Markdown" }
+  );
 
-  const entry = await prisma.foodEntry.create({
+  await prisma.foodEntry.create({
     data: {
       userId: ctx.user.id,
       description,
       calories,
+      aiResponse: estimate as object,
     },
   });
 
@@ -74,7 +84,7 @@ composer.command("log", async (ctx) => {
   });
 
   await ctx.reply(
-    `✅ Logged: ${description} - ${calories} kcal\n` +
+    `✅ Logged: ${description} — ${calories} kcal\n` +
     `Today's total: ${dailyTotal._sum.calories || 0} kcal`
   );
 });

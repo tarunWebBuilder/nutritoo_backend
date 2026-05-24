@@ -9,7 +9,7 @@ composer.command("start", async (ctx) => {
     `Welcome to Nutrino, ${name}! 🥗\n\n` +
     `I help you track your daily calorie intake.\n\n` +
     `Commands:\n` +
-    `/log <description> <calories> - Log a food entry\n` +
+    `/log <food> - AI estimates and logs calories (e.g. /log chicken salad)\n` +
     `/today - See today's total calories\n` +
     `/week - See this week's stats\n` +
     `/subscribe - Subscribe to Nutrino\n` +
@@ -21,7 +21,7 @@ composer.command("start", async (ctx) => {
 composer.command("help", async (ctx) => {
   await ctx.reply(
     `Commands:\n` +
-    `/log <description> <calories> - Log a food entry\n` +
+    `/log <food> - AI estimates and logs calories\n` +
     `/today - See today's total calories\n` +
     `/week - See this week's stats\n` +
     `/subscribe - Subscribe to Nutrino\n` +
