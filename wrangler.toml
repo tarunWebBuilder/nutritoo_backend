@@ -1,0 +1,8 @@
+name = "nutrino-bot"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nutrino-db"
+database_id = ""

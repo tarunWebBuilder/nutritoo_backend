@@ -1,31 +1,9 @@
 import { Composer } from "grammy";
-import prisma from "../db";
-import type { AuthContext } from "../middleware/auth";
+import { insertFoodEntry, getTodayTotal, getTodayEntries, getWeekEntries } from "../db";
 import { estimateCalories } from "../services/calorie-estimator";
+import type { NutrinoContext } from "../types";
 
-const composer = new Composer<AuthContext>();
-
-function getStartOfDay(date: Date = new Date()): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function getEndOfDay(date: Date = new Date()): Date {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
-
-function getStartOfWeek(): Date {
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - diff);
-  monday.setHours(0, 0, 0, 0);
-  return monday;
-}
+const composer = new Composer<NutrinoContext>();
 
 composer.command("log", async (ctx) => {
   if (!ctx.user) return;
@@ -38,7 +16,7 @@ composer.command("log", async (ctx) => {
 
   const msg = await ctx.reply("🤔 Estimating calories with AI...");
 
-  const estimate = await estimateCalories(text);
+  const estimate = await estimateCalories(text, ctx.env.MISTRAL_API_KEY);
   if (!estimate) {
     await ctx.api.editMessageText(
       msg.chat.id,
@@ -64,45 +42,20 @@ composer.command("log", async (ctx) => {
     { parse_mode: "Markdown" }
   );
 
-  await prisma.foodEntry.create({
-    data: {
-      userId: ctx.user.id,
-      description,
-      calories,
-      aiResponse: estimate as object,
-    },
-  });
+  await insertFoodEntry(ctx.env.DB, ctx.user.id, description, calories, estimate);
 
-  const todayStart = getStartOfDay();
-  const todayEnd = getEndOfDay();
-  const dailyTotal = await prisma.foodEntry.aggregate({
-    where: {
-      userId: ctx.user.id,
-      date: { gte: todayStart, lte: todayEnd },
-    },
-    _sum: { calories: true },
-  });
+  const dailyTotal = await getTodayTotal(ctx.env.DB, ctx.user.id);
 
   await ctx.reply(
     `✅ Logged: ${description} — ${calories} kcal\n` +
-    `Today's total: ${dailyTotal._sum.calories || 0} kcal`
+    `Today's total: ${dailyTotal} kcal`
   );
 });
 
 composer.command("today", async (ctx) => {
   if (!ctx.user) return;
 
-  const todayStart = getStartOfDay();
-  const todayEnd = getEndOfDay();
-
-  const entries = await prisma.foodEntry.findMany({
-    where: {
-      userId: ctx.user.id,
-      date: { gte: todayStart, lte: todayEnd },
-    },
-    orderBy: { loggedAt: "desc" },
-  });
-
+  const entries = await getTodayEntries(ctx.env.DB, ctx.user.id);
   const total = entries.reduce((sum, e) => sum + e.calories, 0);
 
   if (entries.length === 0) {
@@ -123,41 +76,38 @@ composer.command("today", async (ctx) => {
 composer.command("week", async (ctx) => {
   if (!ctx.user) return;
 
-  const weekStart = getStartOfWeek();
-  const weekEnd = new Date();
-
-  const entries = await prisma.foodEntry.findMany({
-    where: {
-      userId: ctx.user.id,
-      date: { gte: weekStart, lte: weekEnd },
-    },
-    orderBy: { date: "asc" },
-  });
-
-  const dayMap = new Map<string, number>();
-  for (const entry of entries) {
-    const dayKey = entry.date.toISOString().split("T")[0];
-    dayMap.set(dayKey, (dayMap.get(dayKey) || 0) + entry.calories);
-  }
-
-  const weekTotal = Array.from(dayMap.values()).reduce((a, b) => a + b, 0);
-  const avgPerDay = dayMap.size > 0 ? Math.round(weekTotal / dayMap.size) : 0;
+  const entries = await getWeekEntries(ctx.env.DB, ctx.user.id);
 
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const now = new Date();
+  const day = now.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - diff);
+
+  const dayMap = new Map<string, number>();
+  for (const e of entries) {
+    dayMap.set(e.date, e.calories);
+  }
+
   const lines: string[] = [];
+  let weekTotal = 0;
   for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + i);
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
     const key = d.toISOString().split("T")[0];
     const cal = dayMap.get(key) || 0;
-    const marker = cal > 0 ? `${cal} kcal` : "—";
-    lines.push(`${dayNames[i]}: ${marker}`);
+    weekTotal += cal;
+    lines.push(`${dayNames[i]}: ${cal > 0 ? `${cal} kcal` : "—"}`);
   }
+
+  const daysTracked = dayMap.size;
+  const avg = daysTracked > 0 ? Math.round(weekTotal / daysTracked) : 0;
 
   await ctx.reply(
     `📅 *This Week's Calories*\n\n${lines.join("\n")}\n\n` +
     `Week total: ${weekTotal} kcal\n` +
-    `Daily avg: ${avgPerDay} kcal`,
+    `Daily avg: ${avg} kcal`,
     { parse_mode: "Markdown" }
   );
 });

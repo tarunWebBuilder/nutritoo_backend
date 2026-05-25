@@ -1,37 +1,22 @@
 {
   "name": "nutrino",
   "version": "1.0.0",
-  "description": "Telegram bot for calorie tracking with subscription billing",
-  "main": "dist/index.js",
+  "description": "Telegram bot for AI calorie tracking with Telegram Stars subscription",
+  "main": "src/index.ts",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "npx ts-node src/index.ts",
-    "dev:watch": "nodemon --exec npx ts-node src/index.ts",
-    "migrate": "npx prisma migrate dev",
-    "commands": "npx ts-node src/setup-commands.ts",
-    "prisma:generate": "npx prisma generate"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute nutrino-db --file=./migrations/0001_init.sql",
+    "db:create": "wrangler d1 create nutrino-db",
+    "set-webhook": "curl -X POST \"https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=https://nutrino-bot.${CLOUDFLARE_SUBDOMAIN}.workers.dev/webhook\""
   },
-  "keywords": [
-    "telegram",
-    "bot",
-    "calorie",
-    "tracking",
-    "subscription"
-  ],
-  "author": "",
+  "keywords": ["telegram", "bot", "calorie", "tracking", "cloudflare"],
   "license": "ISC",
   "dependencies": {
-    "@mistralai/mistralai": "^2.2.1",
-    "@prisma/client": "^6.19.3",
-    "dotenv": "^17.4.2",
-    "grammy": "^1.43.0",
-    "prisma": "^6.19.3"
+    "grammy": "^1.43.0"
   },
   "devDependencies": {
-    "@types/node": "^22.17.0",
-    "nodemon": "^3.1.9",
-    "ts-node": "^10.9.2",
+    "@cloudflare/workers-types": "^4.20260525.1",
     "typescript": "^5.8.3"
   }
 }

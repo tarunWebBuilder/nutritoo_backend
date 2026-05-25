@@ -1,20 +1,18 @@
 import { Composer, InlineKeyboard } from "grammy";
-import prisma from "../db";
-import type { AuthContext } from "../middleware/auth";
+import { updateSubscription } from "../db";
+import type { NutrinoContext } from "../types";
 
-const SUBSCRIPTION_PRICE_STARS = 50;
+const SUBSCRIPTION_PRICE_STARS = 100;
 const SUBSCRIPTION_DAYS = 30;
 
-const composer = new Composer<AuthContext>();
+const composer = new Composer<NutrinoContext>();
 
 composer.command("subscribe", async (ctx) => {
   if (!ctx.user) return;
 
-  if (ctx.user.subscribedUntil && ctx.user.subscribedUntil > new Date()) {
-    const expires = ctx.user.subscribedUntil.toLocaleDateString();
-    await ctx.reply(
-      `You already have an active subscription until ${expires}.`
-    );
+  if (ctx.user.subscribed_until && new Date(ctx.user.subscribed_until) > new Date()) {
+    const expires = new Date(ctx.user.subscribed_until).toLocaleDateString();
+    await ctx.reply(`You already have an active subscription until ${expires}.`);
     return;
   }
 
@@ -47,9 +45,7 @@ composer.callbackQuery("subscribe_confirm", async (ctx) => {
 
   const keyboard = new InlineKeyboard().url("Pay via Telegram Stars", invoice);
   await ctx.editMessageText(
-    `🌰 *Nutrino Premium*\n\n` +
-    `Click the button below to complete payment:\n\n` +
-    `Price: ${SUBSCRIPTION_PRICE_STARS} ⭐`,
+    `🌰 *Nutrino Premium*\n\nClick the button below to complete payment:\n\nPrice: ${SUBSCRIPTION_PRICE_STARS} ⭐`,
     { parse_mode: "Markdown", reply_markup: keyboard }
   );
 });
@@ -62,33 +58,27 @@ composer.callbackQuery("subscribe_cancel", async (ctx) => {
 composer.command("cancel", async (ctx) => {
   if (!ctx.user) return;
 
-  await prisma.user.update({
-    where: { id: ctx.user.id },
-    data: { subscribedUntil: null },
-  });
-
-  await ctx.reply("Your subscription has been cancelled. You'll lose access to premium features.");
+  await updateSubscription(ctx.env.DB, ctx.user.id, null);
+  await ctx.reply("Your subscription has been cancelled.");
 });
 
-export async function handleSuccessfulPayment(ctx: AuthContext) {
+export async function handleSuccessfulPayment(ctx: NutrinoContext) {
   if (!ctx.user) return;
 
   const now = new Date();
-  const currentExpiry = ctx.user.subscribedUntil || now;
+  const currentExpiry = ctx.user.subscribed_until
+    ? new Date(ctx.user.subscribed_until)
+    : now;
   const newExpiry = new Date(Math.max(currentExpiry.getTime(), now.getTime()));
   newExpiry.setDate(newExpiry.getDate() + SUBSCRIPTION_DAYS);
 
-  await prisma.user.update({
-    where: { id: ctx.user.id },
-    data: { subscribedUntil: newExpiry },
-  });
-
-  ctx.user.subscribedUntil = newExpiry;
+  await updateSubscription(ctx.env.DB, ctx.user.id, newExpiry.toISOString());
+  ctx.user.subscribed_until = newExpiry.toISOString();
 
   await ctx.reply(
     `✅ Payment successful!\n\n` +
     `Your Nutrino Premium is active until ${newExpiry.toLocaleDateString()}.\n` +
-    `Start tracking: /log Chicken salad 450`
+    `Start tracking: /log chicken salad`
   );
 }
 

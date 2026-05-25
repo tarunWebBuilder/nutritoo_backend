@@ -1,18 +1,3 @@
-import { Mistral } from "@mistralai/mistralai";
-
-let client: Mistral | null = null;
-
-function getClient(): Mistral {
-  if (!client) {
-    const apiKey = process.env.MISTRAL_API_KEY;
-    if (!apiKey) {
-      throw new Error("MISTRAL_API_KEY not set in .env");
-    }
-    client = new Mistral({ apiKey });
-  }
-  return client;
-}
-
 export interface CalorieEstimate {
   description: string;
   calories: number;
@@ -23,39 +8,45 @@ export interface CalorieEstimate {
 }
 
 export async function estimateCalories(
-  foodDescription: string
+  foodDescription: string,
+  apiKey: string
 ): Promise<CalorieEstimate | null> {
   try {
-    const mistral = getClient();
-
-    const response = await mistral.chat.complete({
-      model: "mistral-small-latest",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a nutrition expert. Given a food description, estimate its calorie content and macronutrients. " +
-            "Respond with valid JSON only (no markdown, no extra text) in this exact format: " +
-            '{ "description": "normalized food name", "calories": 123, "protein_g": 10, "fat_g": 5, "carbs_g": 20, "serving_size": "1 cup (200g)" }. ' +
-            "Be realistic and specific. If you cannot estimate, respond with { \"error\": \"reason\" }.",
-        },
-        {
-          role: "user",
-          content: foodDescription,
-        },
-      ],
-      responseFormat: { type: "json_object" },
-      temperature: 0.1,
-      maxTokens: 200,
+    const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "mistral-small-latest",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a nutrition expert. Given a food description, estimate its calorie content and macronutrients. " +
+              'Respond with valid JSON only in this exact format: ' +
+              '{ "description": "normalized food name", "calories": 123, "protein_g": 10, "fat_g": 5, "carbs_g": 20, "serving_size": "1 cup (200g)" }. ' +
+              "Be realistic and specific. If you cannot estimate, respond with { \"error\": \"reason\" }.",
+          },
+          { role: "user", content: foodDescription },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+        max_tokens: 200,
+      }),
     });
 
-    const content = response.choices?.[0]?.message?.content;
-    if (!content || typeof content !== "string") return null;
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) return null;
 
     const parsed = JSON.parse(content);
-
-    if (parsed.error) return null;
-    if (!parsed.calories || parsed.calories <= 0) return null;
+    if (parsed.error || !parsed.calories || parsed.calories <= 0) return null;
 
     return {
       description: parsed.description || foodDescription,
