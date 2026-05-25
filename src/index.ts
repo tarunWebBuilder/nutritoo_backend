@@ -2,7 +2,7 @@ import { Bot, webhookCallback } from "grammy";
 import type { NutrinoContext, Env } from "./types";
 import { authMiddleware } from "./middleware/auth";
 import startCommand from "./commands/start";
-import foodCommands from "./commands/food";
+import foodCommands, { logFoodAndReply } from "./commands/food";
 import subscriptionCommands, { handleSuccessfulPayment } from "./commands/subscription";
 
 function createBot(env: Env): Bot<NutrinoContext> {
@@ -25,7 +25,11 @@ function createBot(env: Env): Bot<NutrinoContext> {
   bot.on("message", async (ctx) => {
     if (!ctx.message?.text) return;
     if (ctx.message.text.startsWith("/")) return;
-    await ctx.reply("Use /help to see available commands.");
+    if (ctx.message.text.length > 300) {
+      await ctx.reply("That's quite long! Use /log <food> to log food, or /help for commands.");
+      return;
+    }
+    await logFoodAndReply(ctx, ctx.message.text);
   });
 
   return bot;

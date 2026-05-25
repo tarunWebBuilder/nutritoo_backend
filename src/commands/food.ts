@@ -5,14 +5,14 @@ import type { NutrinoContext } from "../types";
 
 const composer = new Composer<NutrinoContext>();
 
-composer.command("log", async (ctx) => {
+export async function logFoodAndReply(
+  ctx: NutrinoContext,
+  foodText: string
+): Promise<void> {
   if (!ctx.user) return;
 
-  const text = ctx.match?.trim() || "";
-  if (!text) {
-    await ctx.reply("Describe what you ate — e.g. /log lentil soup with quinoa");
-    return;
-  }
+  const text = foodText.trim();
+  if (!text) return;
 
   const msg = await ctx.reply("🤔 Estimating calories with AI...");
 
@@ -50,6 +50,18 @@ composer.command("log", async (ctx) => {
     `✅ Logged: ${description} — ${calories} kcal\n` +
     `Today's total: ${dailyTotal} kcal`
   );
+}
+
+composer.command("log", async (ctx) => {
+  if (!ctx.user) return;
+
+  const text = ctx.match?.trim() || "";
+  if (!text) {
+    await ctx.reply("Describe what you ate — e.g. /log lentil soup with quinoa");
+    return;
+  }
+
+  await logFoodAndReply(ctx, text);
 });
 
 composer.command("today", async (ctx) => {
