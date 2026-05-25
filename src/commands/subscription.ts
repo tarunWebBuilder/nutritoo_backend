@@ -78,7 +78,7 @@ export async function handleSuccessfulPayment(ctx: NutrinoContext) {
   await ctx.reply(
     `✅ Payment successful!\n\n` +
     `Your Nutrino Premium is active until ${newExpiry.toLocaleDateString()}.\n` +
-    `Start tracking: /log chicken salad`
+    `Start tracking: /log oatmeal with berries`
   );
 }
 

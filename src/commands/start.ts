@@ -9,7 +9,7 @@ composer.command("start", async (ctx) => {
     `Welcome to Nutrino, ${name}! 🥗\n\n` +
     `I track your daily calories using AI.\n\n` +
     `Commands:\n` +
-    `/log <food> - AI estimates calories (e.g. /log chicken salad)\n` +
+    `/log <food> - AI estimates calories (e.g. /log lentil soup)\n` +
     `/today - See today's total calories\n` +
     `/week - See this week's stats\n` +
     `/subscribe - Subscribe to Nutrino\n` +

@@ -24,7 +24,7 @@ export async function estimateCalories(
           {
             role: "system",
             content:
-              "You are a nutrition expert. Given a food description, estimate its calorie content and macronutrients. " +
+              "You are a nutrition expert specializing in plant-based and vegan foods. Given a food description, estimate its calorie content and macronutrients. " +
               'Respond with valid JSON only in this exact format: ' +
               '{ "description": "normalized food name", "calories": 123, "protein_g": 10, "fat_g": 5, "carbs_g": 20, "serving_size": "1 cup (200g)" }. ' +
               "Be realistic and specific. If you cannot estimate, respond with { \"error\": \"reason\" }.",

@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "db:migrate": "wrangler d1 execute nutrino-db --file=./migrations/0001_init.sql",
-    "db:create": "wrangler d1 create nutrino-db",
+    "db:migrate": "wrangler d1 execute nutrino-db-bot --file=./migrations/0001_init.sql",
+    "db:create": "wrangler d1 create nutrino-db-bot",
     "set-webhook": "curl -X POST \"https://api.telegram.org/bot${BOT_TOKEN}/setWebhook?url=https://nutrino-bot.${CLOUDFLARE_SUBDOMAIN}.workers.dev/webhook\""
   },
   "keywords": ["telegram", "bot", "calorie", "tracking", "cloudflare"],

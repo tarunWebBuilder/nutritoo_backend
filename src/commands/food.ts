@@ -10,7 +10,7 @@ composer.command("log", async (ctx) => {
 
   const text = ctx.match?.trim() || "";
   if (!text) {
-    await ctx.reply("Describe what you ate — e.g. /log chicken salad with olive oil");
+    await ctx.reply("Describe what you ate — e.g. /log lentil soup with quinoa");
     return;
   }
 
@@ -21,7 +21,7 @@ composer.command("log", async (ctx) => {
     await ctx.api.editMessageText(
       msg.chat.id,
       msg.message_id,
-      "Couldn't estimate that. Try being more specific (e.g. /log 200g chicken breast)."
+      "Couldn't estimate that. Try being more specific (e.g. /log 200g tofu stir fry)."
     );
     return;
   }
