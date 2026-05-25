@@ -1,9 +1,0 @@
-[
-  {"command":"start","description":"Start the bot"},
-  {"command":"log","description":"Log food - AI estimates calories"},
-  {"command":"today","description":"Today calorie total"},
-  {"command":"week","description":"This week stats"},
-  {"command":"subscribe","description":"Subscribe to Nutrino Premium"},
-  {"command":"cancel","description":"Cancel subscription"},
-  {"command":"help","description":"Show commands"}
-]
