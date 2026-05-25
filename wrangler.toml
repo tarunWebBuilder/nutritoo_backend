@@ -1,4 +1,4 @@
-name = "nutrino-bot"
+name = "nutritoo-backend"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
 
